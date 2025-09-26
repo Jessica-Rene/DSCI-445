@@ -1,0 +1,170 @@
+---
+title: "Lab 2: `ggplot2` and `tidyverse`"
+author: "Jessica Reyes"
+output:
+  pagedown::html_paged:
+    css: ["style/my-style-page.css", "default-fonts", "default-page", "default"]
+    self_contained: true
+    number_sections: true
+---
+
+## `ggplot2`
+
+1. Make a scatterplot of `cty` vs. `hwy` mpg using the `mpg` dataset.
+
+```{r}
+library(ggplot2)
+ggplot(data = mpg) +
+  geom_point(mapping = aes(cty, hwy))
+```
+
+
+2. Describe the relationship that you see.
+
+As city miles per gallon increase, there is also an increase in highway miles per gallon.
+
+3. Map color and shape to type of drive the car is (see `?mpg` for details on the variables.). Do you see any patterns?
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(cty, hwy, colour = drv, shape = drv))
+```
+The front wheel drive tends to have more city miles per gallon and highway miles per gallon compared to rear wheel drive and 4wd.
+
+4. Alter your plot from part 3. to make all the points be larger.
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(cty, hwy, colour = drv, shape = drv), size = 3)
+```
+
+    Using the `mpg` dataset,
+
+5. Make a histogram of `hwy`, faceted by `drv`.
+
+```{r}
+ggplot(data = mpg) +
+  geom_histogram(mapping = aes(hwy)) + 
+  facet_wrap(. ~drv)
+```
+
+6. Make a scatterplot that incorporates color, shape, size, and facets.
+
+```{r}
+ggplot(data = mpg, aes(hwy,cty, colour = drv, shape = drv), size = 2) +
+  geom_point(mapping = aes(hwy)) + 
+  facet_wrap(. ~drv)
+
+```
+
+7. BONUS - Color your histograms from 1. by `cyl`. Did this do what you thought it would? (Look at `fill` and `group` as options instead).
+
+```{r}
+ggplot(data = mpg, aes(hwy, fill = cyl, group = cyl)) +
+  geom_histogram(mapping = aes(hwy)) 
+```
+No, I didn't expect to see the subsets layered on top of eachother.
+
+## `readr`
+
+1. Read the NFL salaries dataset from https://raw.githubusercontent.com/ada-lovecraft/ProcessingSketches/master/Bits%20and%20Pieces/Football_Stuff/data/nfl-salaries.tsv into `R`. 
+
+```{r}
+library(readr)
+nfl_salaries <- read_tsv(file = "https://raw.githubusercontent.com/ada-lovecraft/ProcessingSketches/master/Bits%20and%20Pieces/Football_Stuff/data/nfl-salaries.tsv")
+head(nfl_salaries)
+```
+
+
+2. What is the highest NFL salary in this dataset? Who is the highest paid player?
+
+```{r}
+highest_salary <- max(nfl_salaries$Salary); highest_salary
+nfl_salaries |>
+  filter(Salary == max(Salary))
+```
+
+3. Make a histogram and describe the distribution of NFL salaries.
+
+```{r}
+ggplot(data = nfl_salaries) +
+  geom_histogram(aes(Salary))
+```
+
+
+## `dplyr`
+
+Using the NFL salaries from https://raw.githubusercontent.com/ada-lovecraft/ProcessingSketches/master/Bits%20and%20Pieces/Football_Stuff/data/nfl-salaries.tsv that you loaded into `R` in the section, perform the following.
+
+1. What is the team with the highest paid roster?
+
+```{r}
+nfl_salaries |>
+  group_by(Team) |>
+  summarise(roster_salary = sum(Salary)) |>
+  arrange(desc(roster_salary)) |>
+  head(1)
+```
+
+
+2. What are the top 5 paid players?
+
+```{r}
+nfl_salaries |>
+  arrange(desc(Salary)) |>
+  head(5)
+```
+
+
+3. What is the highest paid position on average? the lowest? the most variable?
+
+```{r}
+nfl_salaries |>
+  group_by(Position) |>
+  summarise(mean_salary = mean(Salary), 
+            sd_salary = sd(Salary)) -> position_salary_stats
+
+## highest avg
+position_salary_stats |>
+  arrange(desc(mean_salary)) |>
+  head(1)
+
+## lowest avg
+position_salary_stats |>
+  arrange(mean_salary) |>
+  head(1)
+
+position_salary_stats |>
+  arrange(mean_salary) |>
+  filter(!is.na(Position)) |>
+  head(1)
+
+## most variable
+position_salary_stats |>
+  arrange(desc(sd_salary)) |>
+  head(1)
+```
+
+
+## `tidyr`
+
+1. Is the NFL salaries from https://raw.githubusercontent.com/ada-lovecraft/ProcessingSketches/master/Bits%20and%20Pieces/Football_Stuff/data/nfl-salaries.tsv that you loaded into `R` in a previous your turn tidy? Why or why not?
+
+## Yes, each variable has a column and each observation has a row.
+
+2. There is a data set in `tidyr` called `world_bank_pop` that contains information about population from the World Bank (https://data.worldbank.org/). Why is this data not tidy? You may want to read more about the data to answer (`?world_bank_pop`).
+
+## The year variable is encoded as the column names, meaning it does not have it's own column => not tidy.
+## also, the indicator variables are not each in their own column, but stacked on top
+
+
+3. Use functions in `tidyr` to turn this into a tidy form.
+
+```{r}
+world_bank_pop |>
+  pivot_longer(cols = c(-country, -indicator), names_to = "year", values_to = "value") |>
+  pivot_wider(names_from = "indicator", values_from = value)
+```
+
+
+
